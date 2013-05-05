@@ -1,0 +1,36 @@
+{% extends "template.html" %}
+{% block content %}
+    <h2>Welcome! You are now logged in.</h2>
+    <a href="/logout">Logout</a>
+    <br />
+    <br />
+    <h3>Merchandise for sale:</h3>
+	<table border="1">
+		<tr>
+			<th>ID</th>
+			<th>Merchandise</th>
+			<th>Price per unit</th>
+			<th>Quantity</th>
+		</tr>
+		<form action="submit" method="POST">
+		{% for item in merch %}
+		<tr>
+		<td>{{ item.pid }}</td>
+		<td>{{ item.merchandise }}</td>
+		<td>{{ item.price }}</td>
+		<td>
+			<input type=text name={{ item.pid }} value="{{ request.form.{{item.pid}} }}">
+			<input type=hidden name=a{{ item.pid }} value={{ item.merchandise }}>
+		</td>
+		</tr>
+		{% endfor %}
+	</table>
+	<br />
+	<input type=submit value=Submit>
+	</form>
+	{% for message in get_flashed_messages() %}
+    <div class=flash>
+        {{ message }}
+    </div>
+	{% endfor %}
+{% endblock %}

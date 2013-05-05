@@ -20,8 +20,9 @@ merchandise = {
 con = lite.connect('merchandise.db')
 
 with con:
-	cur = con.cursor()
-	
+	cur = con.cursor()	
 	cur.execute("DROP TABLE IF EXISTS merch")
-	cur.execute("CREATE TABLE merch(merchandise TEXT, price REAL)")
-	cur.executemany("INSERT INTO merch VALUES(?, ?)", merchandise)
+	cur.execute("CREATE TABLE merch(pid INTEGER PRIMARY KEY AUTOINCREMENT, merchandise TEXT, price MONEY)")
+	cur.executemany("INSERT INTO merch(merchandise,price) VALUES(?,?)", merchandise)
+
+con.close()
