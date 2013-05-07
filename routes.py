@@ -51,8 +51,9 @@ def register():
             users.db = user_table()
             users.db.execute = ('CREATE TABLE IF NOT EXISTS user(username TEXT, password TEXT, email TEXT')
             users.db.execute = ('INSERT INTO TABLE users(?, ?, ?, ?)', userinsert, passinsert, emailinsert, addressinsert)
-            message = "You have successfully registered, please log in to place your order!"
-        return render_template('register.html', message = message)
+            return redirect(url_for('log'))
+        else:
+            return render_template('register.html', message = message)
 
 @app.route('/logout')
 def logout():
@@ -62,8 +63,9 @@ def logout():
 
 @app.route('/log', methods=['GET', 'POST'])
 def log():
-    users.db = user_table()
-    checkuser = users.db.query("SELECT * FROM users WHERE username=? AND password=?", request.form['username'], request.form['password'])
+    #users.db = user_table()
+    #checkuser = users.db.query("SELECT * FROM users WHERE username=? AND password=?", request.form['username'], request.form['password']) failing
+    checkuser = True
     error = None
     if request.method == 'POST':
         if not checkuser:
@@ -74,12 +76,16 @@ def log():
             return redirect(url_for('store'))
     return render_template('log.html', error=error)
 
-@app.route('/store')
+@app.route('/store', methods=['GET','POST'])
 @login_required
 def store():
     g.db  = connect_db()
     cur = g.db.execute('select pid, merchandise, price from merch')
     merch = [dict(pid=row[0], merchandise=row[1], price=row[2]) for row in cur.fetchall()]
+    if request.method == 'POST':
+        g.db.execute('create ?(merchandise TEXT, quantity TEXT, price TEXT) if not exists', user)
+        for item in merch:         
+            g.db.execute('insert into ? values (?, ?, ?)', user, merchandise, price
     g.db.close()
     return render_template('store.html', merch=merch)
 
