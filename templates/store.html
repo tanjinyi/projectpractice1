@@ -1,31 +1,31 @@
 {% extends "template.html" %}
 {% block content %}
-    <h2>Welcome! You are now logged in.</h2>
-    <a href="/logout">Logout</a>
-    <br />
-    <br />
+    <h2>Welcome {{ user }}! You are now logged in.</h2>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    <a href="/logout"><h4>Logout</h4></a><br />
     <h3>Merchandise for sale:</h3>
-	<table border="1">
+	<table border="0" cell-padding="12" cell-spacing="10" width="100%">
 		<tr>
 			<th>ID</th>
 			<th>Merchandise</th>
 			<th>Price per unit</th>
 			<th>Quantity</th>
 		</tr>
-		<form action="submit" method="POST">
+		<form action="" method="POST">
 		{% for item in merch %}
-		<tr>
-		<td>{{ item.pid }}</td>
-		<td>{{ item.merchandise }}</td>
-		<td>{{ item.price }}</td>
-		<td>
-			<input type=text name={{ item.pid }}>
-			<input type=hidden name=a{{ item.pid }} value={{ item.merchandise }}>
-		</td>
-		</tr>
+    	<tr>
+            <th>{{ item.pid }}</th>
+            <th><img src="/static/img/{{item.pid}}.jpg" height="100", width="100"><br />
+            {{ item.merchandise }}</th>
+            <th>{{ item.price }}</th>
+            <th><input type=text name="{{ item.pid }}" value="0"></th>
+    	<input type=hidden name="a{{ item.pid }}" value="{{ item.merchandise }}">
+        <input type=hidden name="b{{ item.pid }}" value="{{ item.price }}">
+        </tr>
 		{% endfor %}
-	</table>
-	<br />
+	</table><br />
 	<input type=submit value=Submit>
 	</form>
 	{% for message in get_flashed_messages() %}

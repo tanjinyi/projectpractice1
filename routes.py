@@ -1,115 +1,148 @@
 from flask import *
 from functools import wraps
+from flask.ext.mail import *
 import sqlite3
 
-DATABASE = '/home/tanjinyi/projectpractice1/merchandise.db'
-orderdatabase = '/home/tanjinyi/projectpractice1/orders.db'
-userdatabase = '/home/tanjinyi/projectpractice1/userdatabase.db'
-
 app = Flask(__name__)
+DATABASE = '/home/tanjinyi/projectpractice1/DATABASE.db' #database path
+app.secret_key = "oh really?"
 app.config.from_object(__name__)
 
-app.secret_key = "oh really?"
-
 def connect_db():
-    return sqlite3.connect(app.config['DATABASE'])
+    return sqlite3.connect(app.config['DATABASE']) #connect to database
 
-def submit_order():
-    return sqlite3.connect(app.config['orderdatabase'])
-
-def user_table():
-    return sqlite3.connect(app.config['userdatabase'])
-
-def login_required(test):
+def login_required(test): #ensures pages that require login well, require login
     @wraps(test)
     def wrap(*args, **kwargs):
         if 'logged_in' in session:
-            return test(*args, **kwargs)
+            return test(*args, **kwargs) #test if logged_in exists
         else:
-            flash('You need to login first.')
+            flash('You need to login first.') #not true, redirecting+flash message
             return redirect(url_for('log'))
     return wrap
 
 @app.route('/')
 def home():
-    return render_template('welcome.html')
+    return render_template('welcome.html') #it's the welcome page!
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    message = None
     if request.method == 'POST':
-        message = None
+        checking = False
         userinsert = request.form['username'] # temp store variables
         passinsert = request.form['password']
-        verifypass = request.form['verifypass']
-        if verifypass != passinsert:
+        verifypass = request.form['verify']
+        emailinsert = request.form['email']
+        addressinsert = request.form['address']
+        if verifypass != passinsert: #simple testing
             message = "Your passwords did not match. Try again."
+            checking = True
         elif userinsert == "" or passinsert == "" or emailinsert == "" or addressinsert == "":
             message = "You did not enter in one of the fields. Please fill in all fields."
-        if not message:
-            emailinsert = request.form['email']
-            addressinsert = request.form['address']
-            users.db = user_table()
-            users.db.execute = ('CREATE TABLE IF NOT EXISTS user(username TEXT, password TEXT, email TEXT')
-            users.db.execute = ('INSERT INTO TABLE users(?, ?, ?, ?)', userinsert, passinsert, emailinsert, addressinsert)
-            return redirect(url_for('log'))
-        else:
-            return render_template('register.html', message = message)
+            checking = True
+        if checking == False:
+            g.db = connect_db()
+            g.db.execute('CREATE TABLE IF NOT EXISTS users(username TEXT, password TEXT, email TEXT, address TEXT)')
+            checkuser = g.db.execute('SELECT * FROM users WHERE username="'+userinsert+'"')
+            if not checkuser:
+                g.db.execute('INSERT INTO users VALUES(?, ?, ?, ?)', (userinsert, passinsert, emailinsert, addressinsert))
+                g.db.commit()
+                g.db.close()
+                return redirect(url_for('log'))
+            else:
+                message = "User already exists."
+    return render_template('register.html', message = message) #returns message flash if wrong, else redirects
+
 
 @app.route('/logout')
 def logout():
-    session.pop('logged_in', None)
+    session.pop('logged_in', None) #clear variables
+    session.pop('user', None) #clear variables
     flash('You were logged out')
     return redirect(url_for('log'))
 
+'''@app.route('/forgot', methods=['GET', 'POST']) #ain't done till it's done
+def forgot_pass():
+    g.db = connect_db()
+    if request.method == 'POST':
+        forgotuser = request.form['username']
+        forgotemail = request.form['email']
+        databaseselect = g.db.execute('SELECT * FROM users WHERE username="'+forgotuser+'"AND email="'+forgotemail+'"')
+        if not databaseselect:
+            message = "There is no current existing user with the username and email. Please try again or register."
+        else:
+            message = "Please check your email, your password has been sent to you!"
+    # insert email conditions here
+    return render_template('forgot.html', message = message)'''
+
 @app.route('/log', methods=['GET', 'POST'])
 def log():
-    #users.db = user_table()
-    #checkuser = users.db.query("SELECT * FROM users WHERE username=? AND password=?", request.form['username'], request.form['password']) failing
-    checkuser = True
     error = None
     if request.method == 'POST':
-        if not checkuser:
+        g.db = connect_db()
+        checkuser = g.db.execute("SELECT * FROM users WHERE username=? AND password=?", [request.form['username'], request.form['password']])
+        validation = False
+        for row in checkuser:
+            if request.form['username'] == row[0] and request.form['password'] == row[1]: #validate user and password
+                validation = True
+        if validation == False:
             error = 'Invalid Credentials. Please try again.'
         else:
             session['logged_in'] = True
-            user = request.form['username']
+            session['user'] = request.form['username']
             return redirect(url_for('store'))
     return render_template('log.html', error=error)
 
 @app.route('/store', methods=['GET','POST'])
 @login_required
 def store():
+    user = session['user']
     g.db  = connect_db()
-    cur = g.db.execute('select pid, merchandise, price from merch')
+    cur = g.db.execute('select * FROM merch ORDER BY pid')
+    error = None
     merch = [dict(pid=row[0], merchandise=row[1], price=row[2]) for row in cur.fetchall()]
+    totalprice = 0
     if request.method == 'POST':
-        g.db.execute('create ?(merchandise TEXT, quantity TEXT, price TEXT) if not exists', user)
-        for item in merch:         
-            g.db.execute('insert into ? values (?, ?, ?)', user, merchandise, price
-    g.db.close()
-    return render_template('store.html', merch=merch)
-
-@app.route('/submit', methods=['GET','POST'])
-def submit():
-    if request.method == 'POST':
-        pidstore = []
-        namestore = []
-        quantitystore = []
         itemcart = False
+        g.db = connect_db()
+        g.db.execute("DROP TABLE IF EXISTS currentorder")
+        g.db.execute("CREATE TABLE currentorder(merchandise TEXT, quantity INT, price REAL)")
         for pid in range (1,14):
-            if request.form[pid] != 0:
-                pidstore.append(pid)
-                quantitystore.append(request.form[pid])
-                namestore.append(request.form[a+str[pid]])
+            if str(request.form[str(pid)]).isdigit():
+                quantitystore = int(request.form[str(pid)])
+            elif request.form[str(pid)].isdigit() == False:
+                error = 'Please input positive integers only.'
+                break
+            if quantitystore > 0:
+                namestore = request.form['a'+str(pid)]
+                originalstore = float(request.form['b'+str(pid)])
+                pricestore = quantitystore*originalstore
+                totalprice += pricestore
                 itemcart = True
-        if itemcart:
-            order.db = submit_order()
-            order.db.execute('DROP TABLE IF EXISTS ?', user)
-            order.db.execute('CREATE TABLE ?(merchandise TEXT, quantity INT, price REAL', user)
-            order.db.executemany('INSERT INTO ? VALUES(?, ?, ?)', user, pid, quantity, order_date)
-            success = 'You have successfully placed an order.'
-            return redirect(url_for('home'))
-        else:
-            error = 'You placed a blank order!'
-            return render_template('store.html', error = error)
+                g.db.execute('INSERT INTO currentorder VALUES(?, ?, ?)', [namestore, quantitystore, pricestore])
 
+        session['totalprice'] = totalprice
+        g.db.commit()
+        if itemcart:
+            return redirect(url_for('confirm'))
+        elif error == None:
+            error = 'You placed a blank order!'
+    g.db.close()
+    return render_template('store.html', merch=merch, error=error, user=user)
+
+@app.route('/confirm', methods=['GET','POST'])
+def confirm():
+    g.db = connect_db()
+    cur = g.db.execute('SELECT * from currentorder')
+    currentorder = [dict(merchandise=row[0], quantity=row[1], price=row[2]) for row in cur.fetchall()]
+    totalprice = session['totalprice']
+    g.db.close()
+    '''if request.method == 'POST':
+        return redirect(url_for('complete'))'''
+    return render_template('confirm.html', currentorder = currentorder, totalprice = totalprice)
+
+'''@app.route('/complete', methods=['GET','POST'])
+def complete(): #MUST IMPLEMENT EMAIL BUT NO TIME
+    g.db = connect_db()
+    cur = g.db.execute('SELECT * from currentorder')'''

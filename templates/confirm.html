@@ -1,0 +1,31 @@
+{% extends "template.html" %}
+{% block content %}
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    <h3>Your order:</h3>
+    <table border="0" cell-padding="12" cell-spacing="10" width="100%">
+		<tr>
+			<th>Merchandise</th>
+            <th>Quantity</th>
+			<th>Total price</th>
+		</tr>
+		{% for item in currentorder %}
+    	<tr>
+            <th>{{ item.merchandise }}</th>
+            <th>{{ item.quantity }}</th>
+            <th>${{ item.price }}0</th>
+        </tr>
+		{% endfor %}
+	</table><br />
+    <p>Total price: ${{ totalprice }}0</p>
+    <form action="" method="POST">
+        <input type=submit value=Confirm>
+    </form>
+    <a href="/store"><h4>Change your order?</h4></a>
+	{% for message in get_flashed_messages() %}
+    <div class=flash>
+        {{ message }}
+    </div>
+	{% endfor %}
+{% endblock %}

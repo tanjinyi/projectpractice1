@@ -1,16 +1,21 @@
 {% extends "template.html" %}
 {% block content %}
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
 	<h2>Register</h2>
-	<form action="" method="POST">
-		<p>Registration is easy! Just fill in the form below and you're set to go!</p>
+	<form action="" method=post>
+		<div style="text-align:center">
+    	<p>Registration is easy! Just fill in the form below and you're set to go!</p>
 		Username: <input type=text name=username> <br />
 		Password: <input type=password name=password> <br />
 		Input password again: <input type=password name=verify> <br />
 		Email: <input type=text name=email> <br />
 		Address: <textarea name=address rows=3 cols=40></textarea> <br />
-	<input type=submit value=Register!>
+        </div>
+	<input type=submit value=Register>
 	</form>
 
-	
+
 
 {% endblock %}
