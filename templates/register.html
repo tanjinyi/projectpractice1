@@ -4,14 +4,14 @@
         <p>{{ message }}</p>
     {% endif %}
 	<h2>Register</h2>
-	<form action="" method=post>
+	<form action="" method="post" onsubmit="return validate(this);">
 		<div style="text-align:center">
     	<p>Registration is easy! Just fill in the form below and you're set to go!</p>
-		Username: <input type=text name=username> <br />
-		Password: <input type=password name=password> <br />
-		Input password again: <input type=password name=verify> <br />
-		Email: <input type=text name=email> <br />
-		Address: <textarea name=address rows=3 cols=40></textarea> <br />
+		Username: <input type="text" name="username" required> <br />
+		Password: <input type="password" name="password" value="" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{6,}" onchange=" this.setCustomValidity(this.validity.patternMismatch ? 'Password must contain at least 6 characters, including UPPER/lowercase and numbers' : ''); if(this.checkValidity()) form.verify.pattern = this.value; " required> <br />
+		Input password again: <input type="password" name="verify" value="" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])\w{6,}" onchange=" this.setCustomValidity(this.validity.patternMismatch ? 'Please enter the same Password as above' : ''); " required> <br />
+		Email: <input type="email" name=email required> <br />
+		Address: <textarea name=address rows=3 cols=40 required></textarea> <br />
         </div>
 	<input type=submit value=Register>
 	</form>

@@ -23,7 +23,10 @@ def login_required(test): #ensures pages that require login well, require login
 
 @app.route('/')
 def home():
-    return render_template('welcome.html') #it's the welcome page!
+    g.db = connect_db()
+    cur = g.db.execute('select * FROM merch ORDER BY pid')
+    merch = [dict(pid=row[0], merchandise=row[1], price=row[2]) for row in cur.fetchall()]
+    return render_template('welcome.html', merch = merch) #it's the welcome page!
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -32,20 +35,12 @@ def register():
         checking = False
         userinsert = request.form['username'] # temp store variables
         passinsert = request.form['password']
-        verifypass = request.form['verify']
         emailinsert = request.form['email']
         addressinsert = request.form['address']
-        if verifypass != passinsert: #simple testing
-            message = "Your passwords did not match. Try again."
-            checking = True
-        elif userinsert == "" or passinsert == "" or emailinsert == "" or addressinsert == "":
-            message = "You did not enter in one of the fields. Please fill in all fields."
-            checking = True
         if checking == False:
             g.db = connect_db()
-            g.db.execute('CREATE TABLE IF NOT EXISTS users(username TEXT, password TEXT, email TEXT, address TEXT)')
             checkuser = g.db.execute('SELECT * FROM users WHERE username="'+userinsert+'"')
-            if not checkuser:
+            if not checkuser.fetchone():
                 g.db.execute('INSERT INTO users VALUES(?, ?, ?, ?)', (userinsert, passinsert, emailinsert, addressinsert))
                 g.db.commit()
                 g.db.close()
@@ -106,8 +101,7 @@ def store():
     if request.method == 'POST':
         itemcart = False
         g.db = connect_db()
-        g.db.execute("DROP TABLE IF EXISTS currentorder")
-        g.db.execute("CREATE TABLE currentorder(merchandise TEXT, quantity INT, price REAL)")
+        g.db.execute('DELETE FROM currentorder WHERE username="'+user+'"')
         for pid in range (1,14):
             if str(request.form[str(pid)]).isdigit():
                 quantitystore = int(request.form[str(pid)])
@@ -117,11 +111,9 @@ def store():
             if quantitystore > 0:
                 namestore = request.form['a'+str(pid)]
                 originalstore = float(request.form['b'+str(pid)])
-                pricestore = quantitystore*originalstore
-                totalprice += pricestore
+                totalprice += originalstore*quantitystore
                 itemcart = True
-                g.db.execute('INSERT INTO currentorder VALUES(?, ?, ?)', [namestore, quantitystore, pricestore])
-
+                g.db.execute('INSERT INTO currentorder VALUES(?, ?, ?, ?)', [user, namestore, quantitystore, originalstore])
         session['totalprice'] = totalprice
         g.db.commit()
         if itemcart:
@@ -135,14 +127,13 @@ def store():
 def confirm():
     g.db = connect_db()
     cur = g.db.execute('SELECT * from currentorder')
-    currentorder = [dict(merchandise=row[0], quantity=row[1], price=row[2]) for row in cur.fetchall()]
+    currentorder = [dict(merchandise=row[1], quantity=row[2], price=row[2]*row[3]) for row in cur.fetchall()]
     totalprice = session['totalprice']
     g.db.close()
     '''if request.method == 'POST':
         return redirect(url_for('complete'))'''
     return render_template('confirm.html', currentorder = currentorder, totalprice = totalprice)
 
-'''@app.route('/complete', methods=['GET','POST'])
+@app.route('/complete', methods=['GET','POST'])
 def complete(): #MUST IMPLEMENT EMAIL BUT NO TIME
-    g.db = connect_db()
-    cur = g.db.execute('SELECT * from currentorder')'''
+    return render_template('complete.html')
